@@ -8,8 +8,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public class TransactionEntity {
-    private Long id;
-    private Integer version;
+    private String id;
     @JsonSerialize(using = BigDecimalConfiguration.class)
     private BigDecimal amount;
     //    @JsonSerialize(using = LocalDateTimeSerializer.class)
@@ -22,23 +21,14 @@ public class TransactionEntity {
     public TransactionEntity(BigDecimal amount, LocalDateTime timestamp) {
         this.amount = amount;
         this.timestamp = timestamp;
-        this.version = null;
     }
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
-    }
-
-    public Integer getVersion() {
-        return version;
-    }
-
-    public void setVersion(Integer version) {
-        this.version = version;
     }
 
     public BigDecimal getAmount() {
@@ -61,7 +51,6 @@ public class TransactionEntity {
     public String toString() {
         return "Transaction{" +
                 "id=" + id +
-                ", version=" + version +
                 ", amount=" + amount +
                 ", timestamp=" + timestamp +
                 '}';
