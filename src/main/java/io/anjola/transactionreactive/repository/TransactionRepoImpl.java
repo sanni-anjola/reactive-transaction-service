@@ -66,13 +66,6 @@ public class TransactionRepoImpl implements TransactionRepository{
     }
 
     @Override
-    public Flux<Transaction> findAll() {
-        return Flux.fromIterable(transactionDB.values())
-                .filter((transactionEntity -> Duration.between(transactionEntity.getTimestamp(), LocalDateTime.now()).toSeconds() <= 30))
-                .map(mapper::entityToApi);
-    }
-
-    @Override
     public Mono<Void> deleteAll() {
         return Mono.just(1)
                 .map(e -> {
@@ -97,6 +90,12 @@ public class TransactionRepoImpl implements TransactionRepository{
                     statistics.setMin(amountList.stream().parallel().min(BigDecimal::compareTo).orElse(null));
                     return statistics;
                 });
+    }
+
+        private Flux<Transaction> findAll() {
+        return Flux.fromIterable(transactionDB.values())
+                .filter((transactionEntity -> Duration.between(transactionEntity.getTimestamp(), LocalDateTime.now()).toSeconds() <= 30))
+                .map(mapper::entityToApi);
     }
 
     private String createID(){
