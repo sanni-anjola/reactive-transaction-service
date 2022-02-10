@@ -24,4 +24,9 @@ public class TransactionServiceImpl implements TransactionService{
     public Mono<Void> deleteTransactions() {
         return repository.deleteAll();
     }
+
+    @Override
+    public Mono<Integer> getCount() {
+        return repository.getSize();
+    }
 }

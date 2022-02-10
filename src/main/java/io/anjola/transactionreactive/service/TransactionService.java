@@ -14,4 +14,5 @@ public interface TransactionService {
     Mono<Transaction> create(@Valid Transaction transaction);
     Mono<TransactionStatistics> getTransactionStatistics();
     Mono<Void> deleteTransactions();
+    Mono<Integer> getCount();
 }

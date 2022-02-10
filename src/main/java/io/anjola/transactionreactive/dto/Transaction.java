@@ -7,6 +7,7 @@ import io.anjola.transactionreactive.config.BigDecimalConfiguration;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+
 public class Transaction {
     @JsonSerialize(using = BigDecimalConfiguration.class)
     private BigDecimal amount;
@@ -35,5 +36,13 @@ public class Transaction {
 
     public void setTimestamp(LocalDateTime timestamp) {
         this.timestamp = timestamp;
+    }
+
+    @Override
+    public String toString() {
+        return "Transaction{" +
+                "amount=" + amount +
+                ", timestamp=" + timestamp +
+                '}';
     }
 }
