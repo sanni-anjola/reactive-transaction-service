@@ -2,11 +2,14 @@ package io.anjola.transactionreactive.repository;
 
 import io.anjola.transactionreactive.dto.Transaction;
 import io.anjola.transactionreactive.dto.TransactionStatistics;
+import io.anjola.transactionreactive.exception.InvalidInputException;
+import io.anjola.transactionreactive.exception.InvalidTransactionException;
+import io.anjola.transactionreactive.exception.OldTransactionException;
 import io.anjola.transactionreactive.mapper.TransactionMapper;
 import io.anjola.transactionreactive.model.TransactionEntity;
+import org.mapstruct.factory.Mappers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -23,8 +26,7 @@ import java.util.concurrent.ConcurrentMap;
 public class TransactionRepoImpl implements TransactionRepository{
     private final Logger log = LoggerFactory.getLogger(TransactionRepoImpl.class);
     private final ConcurrentMap<String, TransactionEntity> transactionDB;
-    @Autowired
-    private TransactionMapper mapper;
+    private final TransactionMapper mapper = Mappers.getMapper(TransactionMapper.class);
     private TransactionRepoImpl() {
         transactionDB = new ConcurrentHashMap<>();
     }
@@ -38,25 +40,26 @@ public class TransactionRepoImpl implements TransactionRepository{
     public Mono<Transaction> save(Transaction transaction) {
         if(transaction.getAmount() == null || transaction.getTimestamp() == null){
             log.error("Invalid input...");
-            return Mono.error(new IllegalArgumentException("Cannot be saved. amount and timestamp are required, but one or both is empty."))
+            return Mono.error(new InvalidInputException("Cannot be saved. amount and timestamp are required, but one or both is empty."))
                     .thenReturn(transaction);
         }
         long timeLapse = Duration.between(transaction.getTimestamp(), LocalDateTime.now()).toSeconds();
         if(timeLapse > 30)
-            return Mono.error(new IllegalArgumentException("Transaction over 30seconds cannot be registered"));
+            return Mono.error(new OldTransactionException("Transaction over 30seconds cannot be registered"));
         if(timeLapse < 0)
-            return Mono.error(new IllegalArgumentException("Transaction cannot be done in the future"));
+            return Mono.error(new InvalidTransactionException("Transaction cannot be done in the future"));
 
         TransactionEntity entity = mapper.apiToEntity(transaction);
         entity.setId(createID());
 
-        return Mono.defer(() -> addEntity(Mono.just(entity)));
+        return addEntity(Mono.just(entity))
+                .thenReturn(mapper.entityToApi(entity));
     }
 
     private Mono<Transaction> addEntity(Mono<TransactionEntity> entity) {
         return entity
                 .mapNotNull(e -> transactionDB.put(e.getId(), e))
-                .map(e -> mapper.entityToApi(e));
+                .map(mapper::entityToApi);
 
 
 
@@ -65,7 +68,8 @@ public class TransactionRepoImpl implements TransactionRepository{
     @Override
     public Flux<Transaction> findAll() {
         return Flux.fromIterable(transactionDB.values())
-                .map(e -> mapper.entityToApi(e));
+                .filter((transactionEntity -> Duration.between(transactionEntity.getTimestamp(), LocalDateTime.now()).toSeconds() <= 30))
+                .map(mapper::entityToApi);
     }
 
     @Override
@@ -81,18 +85,16 @@ public class TransactionRepoImpl implements TransactionRepository{
     @Override
     public Mono<TransactionStatistics> getTransactionStat() {
         if(transactionDB.isEmpty()) return Mono.just(new TransactionStatistics());
-        return Flux.fromIterable(transactionDB.values())
-                .map(entity -> mapper.entityToApi(entity))
-                .filter(tran -> Duration.between(tran.getTimestamp(), LocalDateTime.now()).toSeconds() > 30)
+        return findAll()
                 .map(Transaction::getAmount)
                 .collectList()
-                .map(e -> {
+                .map(amountList -> {
                     TransactionStatistics statistics = new TransactionStatistics();
-                    statistics.setCount(e.size());
-                    statistics.setSum(e.stream().parallel().reduce(BigDecimal.ZERO, BigDecimal::add));
-                    statistics.setAvg(e.stream().parallel().reduce(BigDecimal.ZERO, BigDecimal::add).divide(BigDecimal.valueOf(e.size()), RoundingMode.HALF_UP));
-                    statistics.setMax(e.stream().parallel().max(BigDecimal::compareTo).orElse(null));
-                    statistics.setMax(e.stream().parallel().min(BigDecimal::compareTo).orElse(null));
+                    statistics.setCount(amountList.size());
+                    statistics.setSum(amountList.stream().parallel().reduce(BigDecimal.ZERO, BigDecimal::add));
+                    statistics.setAvg(amountList.stream().parallel().reduce(BigDecimal.ZERO, BigDecimal::add).divide(BigDecimal.valueOf(amountList.size()), RoundingMode.HALF_UP));
+                    statistics.setMax(amountList.stream().parallel().max(BigDecimal::compareTo).orElse(null));
+                    statistics.setMin(amountList.stream().parallel().min(BigDecimal::compareTo).orElse(null));
                     return statistics;
                 });
     }

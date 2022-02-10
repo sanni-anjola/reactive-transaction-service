@@ -7,6 +7,9 @@ public class Transaction {
     private BigDecimal amount;
     private LocalDateTime timestamp;
 
+    public Transaction(){
+        this(null, null);
+    }
     public Transaction(BigDecimal amount, LocalDateTime timestamp) {
         this.amount = amount;
         this.timestamp = timestamp;

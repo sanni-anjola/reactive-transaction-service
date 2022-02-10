@@ -14,7 +14,7 @@ public class TransactionStatistics {
     private BigDecimal max;
     @JsonSerialize(using = BigDecimalConfiguration.class)
     private BigDecimal min;
-    private long count;
+    private Long count;
 
     public TransactionStatistics() {
         this(null, null, null, null, 0);
@@ -66,5 +66,16 @@ public class TransactionStatistics {
 
     public void setCount(long count) {
         this.count = count;
+    }
+
+    @Override
+    public String toString() {
+        return "TransactionStatistics{" +
+                "sum=" + sum +
+                ", avg=" + avg +
+                ", max=" + max +
+                ", min=" + min +
+                ", count=" + count +
+                '}';
     }
 }
