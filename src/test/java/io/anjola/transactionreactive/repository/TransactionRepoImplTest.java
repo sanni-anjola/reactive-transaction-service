@@ -4,6 +4,7 @@ import io.anjola.transactionreactive.dto.Transaction;
 import io.anjola.transactionreactive.exception.InvalidInputException;
 import io.anjola.transactionreactive.exception.InvalidTransactionException;
 import io.anjola.transactionreactive.exception.OldTransactionException;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -44,6 +45,7 @@ class TransactionRepoImplTest {
                 .expectNext(1)
                 .verifyComplete();
     }
+
 
     @Test
     void saveTransactionTest(){
